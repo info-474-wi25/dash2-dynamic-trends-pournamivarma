@@ -22,8 +22,9 @@ const svg2_RENAME = d3.select("#lineChart2")
 // const tooltip = ...
 
 // 2.a: LOAD...
-d3.csv("YOUR_CSV_NAME.csv").then(data => {
+d3.csv("weather.csv").then(data => {
     // 2.b: ... AND TRANSFORM DATA
+    console.log(data)
 
     // 3.a: SET SCALES FOR CHART 1
 
