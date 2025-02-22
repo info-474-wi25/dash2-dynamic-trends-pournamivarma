@@ -11,7 +11,7 @@ const svg1 = d3.select("#lineChart1") // If you change this ID, you must change 
     .append("g")
     .attr("transform", `translate(${margin.left},${margin.top})`);
 
-const svg2_RENAME = d3.select("#lineChart2")
+const svg2 = d3.select("#lineChart2")
     .append("svg")
     .attr("width", width + margin.left + margin.right)
     .attr("height", height + margin.top + margin.bottom)
@@ -107,8 +107,7 @@ d3.csv("weather.csv").then(data => {
         d.record_max_temp = +d.record_max_temp;
     
     // Parse chart 2 data
-        // d.year = d.year; // Keep year as string in "Month of Date, Year" format
-        d.year = d.date.getFullYear(); // Extract year
+        d.year = d3.timeFormat("%B %Y")(d.date); // Format year as "Month Year"
         d.record_precipitation = +d.record_precipitation;
         d.actual_precipitation = +d.actual_precipitation;
         d.average_precipitation = +d.average_precipitation;
@@ -192,72 +191,45 @@ d3.csv("weather.csv").then(data => {
     // ==========================================
 
     // 3.b: SET SCALES FOR CHART 2
-    // const x2 = d3.scaleBand()
-    //     .domain(data.map(d => d.year))
-    //     .range([0, width])
-    //     .padding(0.1);
-
-    // const y2 = d3.scaleLinear()
-    //     .domain([0, d3.max(data, d => d.actual_precipitation)])
-    //     .range([height, 0]);
-
     x2.domain(data.map(d => d.year));
-    y2.domain([0, d3.max(data, d => d.actual_precipitation)]);
+    y2.domain([0, d3.max(data, d => d.record_precipitation)]);
 
     // 4.b: PLOT DATA FOR CHART 2
-    svg2_RENAME.append("path")
-        .datum(data)
-        .attr("fill", "none")
-        .attr("stroke", "steelblue")
-        .attr("stroke-width", 1.5)
-        .attr("d", d3.line()
-            .x(d => x2(d.year) + x2.bandwidth() / 2)
-            .y(d => y2(d.actual_precipitation))
-        );
+    svg2.selectAll(".bar")
+        .data(data)
+        .enter()
+        .append("rect")
+        .attr("class", "bar")
+        .attr("x", d => x2(d.year))
+        .attr("width", x2.bandwidth())
+        .attr("y", d => y2(d.record_precipitation))
+        .attr("height", d => height - y2(d.record_precipitation))
+        .attr("fill", "steelblue");
 
     // 5.b: ADD AXES FOR CHART 2
-    svg2_RENAME.append("g")
+    svg2.append("g")
         .attr("transform", `translate(0,${height})`)
         .call(d3.axisBottom(x2));
 
-    svg2_RENAME.append("g")
+    svg2.append("g")
         .call(d3.axisLeft(y2));
 
     // 6.b: ADD LABELS FOR CHART 2
-    svg2_RENAME.append("text")
+    svg2.append("text")
         .attr("text-anchor", "end")
         .attr("x", width)
         .attr("y", height + margin.top + 20)
-        .text("Month of Date");
+        .text("Month Year");
 
-    svg2_RENAME.append("text")
+    svg2.append("text")
         .attr("text-anchor", "end")
         .attr("transform", "rotate(-90)")
         .attr("y", -margin.left + 20)
         .attr("x", -margin.top)
-        .text("Actual Precipitation");
+        .text("Record Precipitation");
 
     // 7.b: ADD INTERACTIVITY FOR CHART 2
-    svg2_RENAME.selectAll("circle")
-        .data(data)
-        .enter()
-        .append("circle")
-        .attr("cx", d => x2(d.year) + x2.bandwidth() / 2)
-        .attr("cy", d => y2(d.actual_precipitation))
-        .attr("r", 3)
-        .attr("fill", "red")
-        .on("mouseover", (event, d) => {
-            d3.select(event.currentTarget)
-                .attr("r", 6)
-                .attr("fill", "orange");
-            // Tooltip code can be added here
-        })
-        .on("mouseout", (event, d) => {
-            d3.select(event.currentTarget)
-                .attr("r", 3)
-                .attr("fill", "red");
-            // Tooltip code can be added here
-        });
+    // No interactivity for Chart 2
 
     // Set scales
     // const x = d3.scaleBand()
