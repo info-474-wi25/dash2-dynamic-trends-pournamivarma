@@ -107,7 +107,7 @@ d3.csv("weather.csv").then(data => {
         d.record_max_temp = +d.record_max_temp;
     
     // Parse chart 2 data
-        d.year = d3.timeFormat("%B %Y")(d.date); // Format year as "Month Year"
+        d.year = d3.timeFormat("%B")(d.date); // Format year as "Month"
         d.record_precipitation = +d.record_precipitation;
         d.actual_precipitation = +d.actual_precipitation;
         d.average_precipitation = +d.average_precipitation;
@@ -216,10 +216,10 @@ d3.csv("weather.csv").then(data => {
 
     // 6.b: ADD LABELS FOR CHART 2
     svg2.append("text")
-        .attr("text-anchor", "end")
-        .attr("x", width)
-        .attr("y", height + margin.top + 20)
-        .text("Month Year");
+        .attr("text-anchor", "middle")
+        .attr("x", width / 2)
+        .attr("y", height + margin.bottom - 10)
+        .text("Month");
 
     svg2.append("text")
         .attr("text-anchor", "end")
