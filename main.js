@@ -219,7 +219,7 @@ d3.csv("weather.csv").then(data => {
         .attr("text-anchor", "middle")
         .attr("x", width / 2)
         .attr("y", height + margin.bottom - 10)
-        .text("Month");
+        .text("Months");
 
     svg2.append("text")
         .attr("text-anchor", "end")
