@@ -125,8 +125,13 @@ d3.csv("weather.csv").then(data => {
         record_temp: d3.mean(values, d => d.record_max_temp)
     }));
 
+
+    // CHANGED: Adjusted y-axis domain to ensure no lines get cut off
+    const minTemp = d3.min(parsedData, d => Math.min(d.actual_temp, d.historical_temp, d.record_temp));
+    const maxTemp = d3.max(parsedData, d => Math.max(d.actual_temp, d.historical_temp, d.record_temp));
+
     x1.domain(d3.extent(parsedData, d => d.date));
-    y1.domain([d3.min(parsedData, d => d.record_temp) - 5, d3.max(parsedData, d => d.record_temp) + 5]);
+    y1.domain([minTemp - 5, maxTemp + 5]); // CHANGED: Added buffer so all lines are visible
 
     // 4.a: PLOT DATA FOR CHART 1
 
@@ -146,12 +151,25 @@ d3.csv("weather.csv").then(data => {
     // Append axes    
     svg1.append("g")
         .attr("transform", `translate(0,${height})`)
-        .call(d3.axisBottom(x1)
-        .tickFormat(d3.timeFormat("%b")) // Show months (e.g., Jan, Feb, etc.)
+        // .call(d3.axisBottom(x1)
+        // .tickFormat(d3.timeFormat("%b")) // Show months (e.g., Jan, Feb, etc.)
+        .call(d3.axisBottom(x1).tickFormat(d3.timeFormat("%B")) // Now it shows full month names
     );
 
     svg1.append("g")
         .call(d3.axisLeft(y1));
+
+
+    // CHANGED: Added Y-axis label
+    svg1.append("text")
+        .attr("transform", "rotate(-90)")
+        .attr("y", -margin.left + 20) // Adjusted positioning
+        .attr("x", -height / 2)
+        .attr("dy", "1em")
+        .style("text-anchor", "middle")
+        .style("font-size", "14px")
+        .text("Temperature (°F)"); // CHANGED: Label text
+
 
     // Append line paths
     svg1.append("path")
@@ -181,6 +199,39 @@ d3.csv("weather.csv").then(data => {
 
 
     // 6.a: ADD LABELS FOR CHART 1
+
+    // Define legend data
+    const legendData = [
+        { label: "Actual Max Temperature", color: "steelblue" },
+        { label: "Average Max Temperature", color: "orange" },
+        { label: "Record Max Temperature", color: "red" }
+    ];
+
+    // Create a legend container
+    const legend = svg1.append("g")
+        .attr("transform", `translate(${width - 150}, 10)`); // Adjust position as needed
+
+    // Append legend items (colored circles)
+    legend.selectAll("legendDots")
+        .data(legendData)
+        .enter()
+        .append("circle")
+        .attr("cx", 0)
+        .attr("cy", (d, i) => i * 20)
+        .attr("r", 6)
+        .style("fill", d => d.color);
+
+    // Append text labels next to the circles
+    legend.selectAll("legendLabels")
+        .data(legendData)
+        .enter()
+        .append("text")
+        .attr("x", 15)
+        .attr("y", (d, i) => i * 20 + 5)
+        .style("fill", "black")
+        .text(d => d.label)
+        .attr("text-anchor", "start")
+        .style("font-size", "12px");
 
 
     // 7.a: ADD INTERACTIVITY FOR CHART 1
