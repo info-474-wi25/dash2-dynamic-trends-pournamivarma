@@ -148,6 +148,84 @@ d3.csv("weather.csv").then(data => {
         .x(d => x1(d.date))
         .y(d => y1(d.record_temp));
 
+    const trendlineOptions = ["None", "Actual Max Temperature", "Average Max Temperature", "Record Max Temperature"];
+
+    const trendlineDropdown = d3.select("#lineChartDropdown")
+        .append("select")
+        .attr("id", "trendlineSelector")
+        .style("margin-bottom", "10px")
+        .on("change", updateTrendline);
+    
+    // Add options to the dropdown
+    trendlineDropdown.selectAll("option")
+        .data(trendlineOptions)
+        .enter()
+        .append("option")
+        .attr("value", d => d)
+        .text(d => d);
+    
+    // Define a separate trendline path element (initially hidden)
+    const trendline = svg1.append("path")
+        .attr("fill", "none")
+        .attr("stroke", "black") // Trendline in black
+        .attr("stroke-dasharray", "5,5") // Dashed line style
+        .attr("stroke-width", 2)
+        .attr("class", "trendline")
+        .style("opacity", 0); // Initially hidden
+    
+    // Function to compute moving average
+    function movingAverage(data, yAccessor, windowSize = 5) {
+        return data.map((d, i, arr) => {
+            const start = Math.max(0, i - Math.floor(windowSize / 2));
+            const end = Math.min(arr.length, i + Math.ceil(windowSize / 2));
+            const subset = arr.slice(start, end);
+            return {
+                date: d.date,
+                value: d3.mean(subset, yAccessor)
+            };
+        });
+    }
+
+    // Function to update the trendline based on selection
+    function updateTrendline() {
+        const selectedTrendline = d3.select("#trendlineSelector").property("value");
+        
+        let yAccessor;
+        
+        if (selectedTrendline === "Actual Max Temperature") {
+            yAccessor = d => d.actual_temp;
+        } else if (selectedTrendline === "Average Max Temperature") {
+            yAccessor = d => d.historical_temp;
+        } else if (selectedTrendline === "Record Max Temperature") {
+            yAccessor = d => d.record_temp;
+        } else {
+            trendline.style("opacity", 0); // Hide trendline if "None" is selected
+            return;
+        }
+
+        // Compute moving average for smoother trendline
+        const trendData = movingAverage(parsedData, yAccessor);
+
+        // Define trendline function
+        const trendlineFunction = d3.line()
+            .x(d => x1(d.date))
+            .y(d => y1(d.value))
+            .curve(d3.curveBasis); // Smoothing
+
+        // Update trendline with transition
+        trendline
+            .datum(trendData)
+            .transition()
+            .duration(500)
+            .attr("d", trendlineFunction)
+            .style("opacity", 1); // Make trendline visible
+    }
+
+    // Initial call to ensure no trendline is shown at the start
+    updateTrendline();
+
+
+
     // Append axes    
     svg1.append("g")
         .attr("transform", `translate(0,${height})`)
@@ -177,6 +255,7 @@ d3.csv("weather.csv").then(data => {
         .attr("fill", "none")
         .attr("stroke", "steelblue")
         .attr("stroke-width", 2)
+        .attr("class", "line actual-temp")
         .attr("d", lineActual);
 
     svg1.append("path")
@@ -184,16 +263,16 @@ d3.csv("weather.csv").then(data => {
         .attr("fill", "none")
         .attr("stroke", "orange")
         .attr("stroke-width", 2)
-        .attr("d", lineHistorical)
-        .attr("class", "trendline");
+        .attr("class", "line historical-temp")
+        .attr("d", lineHistorical);
 
     svg1.append("path")
         .datum(parsedData)
         .attr("fill", "none")
         .attr("stroke", "red")
         .attr("stroke-width", 2)
+        .attr("class", "line record-temp")
         .attr("d", lineRecord);
-
 
     // 5.a: ADD AXES FOR CHART 1
 
