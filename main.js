@@ -18,22 +18,14 @@ const svg2 = d3.select("#lineChart2")
     .append("g")
     .attr("transform", `translate(${margin.left},${margin.top})`);
 
-// Create SVG container for the bar chart
-const svgBar = d3.select("#barChart")
-    .append("svg")
-    .attr("width", width + margin.left + margin.right)
-    .attr("height", height + margin.top + margin.bottom)
-    .append("g")
-    .attr("transform", `translate(${margin.left},${margin.top})`);
-
 // Dropdown menu for selecting the type of precipitation
 const dropdown = d3.select("#dropdownMenu")
     .append("select")
     .attr("id", "precipitationType")
-    .on("change", updateChart);
+    .on("change", updateCombinedChart);
 
 // Options for the dropdown menu
-const options = ["Record Precipitation", "Actual Precipitation", "Average Precipitation"];
+const options = ["None", "Record Precipitation", "Actual Precipitation", "Average Precipitation"];
 dropdown.selectAll("option")
     .data(options)
     .enter()
@@ -42,7 +34,6 @@ dropdown.selectAll("option")
 
 // (If applicable) Tooltip element for interactivity
 // const tooltip = ...
-
 
 function updateChart() {
     if (!window.weatherData) return; // Ensure data is loaded
@@ -53,8 +44,11 @@ function updateChart() {
         yValue = "record_precipitation";
     } else if (selectedOption === "Actual Precipitation") {
         yValue = "actual_precipitation";
-    } else {
+    } else if (selectedOption === "Average Precipitation") {
         yValue = "average_precipitation";
+    } else {
+        svgBar.selectAll(".bar").remove(); // Remove bars if "None" is selected
+        return;
     }
 
     y2.domain([0, d3.max(window.weatherData, d => d[yValue])]);
@@ -94,6 +88,9 @@ const y1 = d3.scaleLinear().range([height, 0]);
 const x2 = d3.scaleBand().range([0, width]).padding(0.1);
 const y2 = d3.scaleLinear().range([height, 0]);
 
+const xCombined = d3.scaleBand().range([0, width]).padding(0.1);
+const yCombined = d3.scaleLinear().range([height, 0]);
+
 // 2.a: LOAD...
 d3.csv("weather.csv").then(data => {
     // console.log(data)
@@ -124,7 +121,6 @@ d3.csv("weather.csv").then(data => {
         historical_temp: d3.mean(values, d => d.average_max_temp),
         record_temp: d3.mean(values, d => d.record_max_temp)
     }));
-
 
     // CHANGED: Adjusted y-axis domain to ensure no lines get cut off
     const minTemp = d3.min(parsedData, d => Math.min(d.actual_temp, d.historical_temp, d.record_temp));
@@ -224,8 +220,6 @@ d3.csv("weather.csv").then(data => {
     // Initial call to ensure no trendline is shown at the start
     updateTrendline();
 
-
-
     // Append axes    
     svg1.append("g")
         .attr("transform", `translate(0,${height})`)
@@ -237,7 +231,6 @@ d3.csv("weather.csv").then(data => {
     svg1.append("g")
         .call(d3.axisLeft(y1));
 
-
     // CHANGED: Added Y-axis label
     svg1.append("text")
         .attr("transform", "rotate(-90)")
@@ -247,7 +240,6 @@ d3.csv("weather.csv").then(data => {
         .style("text-anchor", "middle")
         .style("font-size", "14px")
         .text("Temperature (°F)"); // CHANGED: Label text
-
 
     // Append line paths
     svg1.append("path")
@@ -275,7 +267,6 @@ d3.csv("weather.csv").then(data => {
         .attr("d", lineRecord);
 
     // 5.a: ADD AXES FOR CHART 1
-
 
     // 6.a: ADD LABELS FOR CHART 1
 
@@ -312,9 +303,7 @@ d3.csv("weather.csv").then(data => {
         .attr("text-anchor", "start")
         .style("font-size", "12px");
 
-
     // 7.a: ADD INTERACTIVITY FOR CHART 1
-    
 
     // ==========================================
     //         CHART 2 
@@ -325,16 +314,7 @@ d3.csv("weather.csv").then(data => {
     y2.domain([0, d3.max(data, d => d.record_precipitation)]);
 
     // 4.b: PLOT DATA FOR CHART 2
-    svg2.selectAll(".bar")
-        .data(data)
-        .enter()
-        .append("rect")
-        .attr("class", "bar")
-        .attr("x", d => x2(d.year))
-        .attr("width", x2.bandwidth())
-        .attr("y", d => y2(d.record_precipitation))
-        .attr("height", d => height - y2(d.record_precipitation))
-        .attr("fill", "steelblue");
+    updateCombinedChart();
 
     // 5.b: ADD AXES FOR CHART 2
     svg2.append("g")
@@ -358,30 +338,62 @@ d3.csv("weather.csv").then(data => {
         .attr("x", -margin.top)
         .text("Record Precipitation");
 
-    // 7.b: ADD INTERACTIVITY FOR CHART 2
-    // No interactivity for Chart 2
-
-    // Set scales
-    // const x = d3.scaleBand()
-    //     .domain(data.map(d => d.year))
-    //     .range([0, width])
-    //     .padding(0.1);
-
-    // const y = d3.scaleLinear()
-    //     .range([height, 0]);
-
-    // Add axes
-    svgBar.append("g")
-        .attr("class", "x-axis")
-        .attr("transform", `translate(0,${height})`)
-        .call(d3.axisBottom(x2).tickFormat(d3.format("d")));
-
-    svgBar.append("g")
-        .attr("class", "y-axis");
-
     window.weatherData = data; // Store data globally
     // Initial chart update
     updateChart();
+    updateCombinedChart();
 });
+
+// Function to update the combined chart based on dropdown selection
+function updateCombinedChart() {
+    if (!window.weatherData) return; // Ensure data is loaded
+    const selectedOption = d3.select("#precipitationType").property("value");
+    let yValue, color;
+
+    if (selectedOption === "Record Precipitation") {
+        yValue = "record_precipitation";
+        color = "lightblue";
+    } else if (selectedOption === "Actual Precipitation") {
+        yValue = "actual_precipitation";
+        color = "dodgerblue";
+    } else if (selectedOption === "Average Precipitation") {
+        yValue = "average_precipitation";
+        color = "darkblue";
+    } else {
+        svg2.selectAll(".bar").remove(); // Remove bars if "None" is selected
+        return;
+    }
+
+    y2.domain([0, d3.max(window.weatherData, d => d[yValue])]);
+
+    svg2.select(".y-axis")
+        .transition()
+        .call(d3.axisLeft(y2));
+
+    const bars = svg2.selectAll(".bar")
+        .data(window.weatherData, d => d.year);
+
+    bars.enter()
+        .append("rect")
+        .attr("class", "bar")
+        .attr("x", d => x2(d.year))
+        .attr("width", x2.bandwidth())
+        .attr("y", height)
+        .attr("height", 0)
+        .attr("fill", color)
+        .merge(bars)
+        .transition()
+        .attr("x", d => x2(d.year))
+        .attr("width", x2.bandwidth())
+        .attr("y", d => y2(d[yValue]))
+        .attr("height", d => height - y2(d[yValue]))
+        .attr("fill", color);
+
+    bars.exit()
+        .transition()
+        .attr("y", height)
+        .attr("height", 0)
+        .remove();
+}
 
 // window.updateChart = updateChart;
