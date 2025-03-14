@@ -25,12 +25,13 @@ const dropdown = d3.select("#dropdownMenu")
     .on("change", updateCombinedChart);
 
 // Options for the dropdown menu
-const options = ["None", "Record Precipitation", "Actual Precipitation", "Average Precipitation"];
+const options = ["Record Precipitation", "Actual Precipitation", "Average Precipitation"];
 dropdown.selectAll("option")
     .data(options)
     .enter()
     .append("option")
-    .text(d => d);
+    .text(d => d)
+    .property("selected", d => d === "Record Precipitation");
 
 // (If applicable) Tooltip element for interactivity
 // const tooltip = ...
@@ -144,7 +145,7 @@ d3.csv("weather.csv").then(data => {
         .x(d => x1(d.date))
         .y(d => y1(d.record_temp));
 
-    const trendlineOptions = ["None", "Actual Max Temperature", "Average Max Temperature", "Record Max Temperature"];
+    const trendlineOptions = ["No Trendline", "Actual Max Temperature", "Average Max Temperature", "Record Max Temperature"];
 
     const trendlineDropdown = d3.select("#lineChartDropdown")
         .append("select")
@@ -359,9 +360,6 @@ function updateCombinedChart() {
     } else if (selectedOption === "Average Precipitation") {
         yValue = "average_precipitation";
         color = "darkblue";
-    } else {
-        svg2.selectAll(".bar").remove(); // Remove bars if "None" is selected
-        return;
     }
 
     y2.domain([0, d3.max(window.weatherData, d => d[yValue])]);
@@ -395,5 +393,3 @@ function updateCombinedChart() {
         .attr("height", 0)
         .remove();
 }
-
-// window.updateChart = updateChart;
