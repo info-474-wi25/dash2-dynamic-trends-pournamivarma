@@ -350,7 +350,7 @@ d3.csv("weather.csv").then(data => {
         .attr("transform", "rotate(-90)")
         .attr("y", -margin.left + 40)
         .attr("x", -margin.top - 20)
-        .text("Record Precipitation");
+        .text("Precipitation (inches)");
 
     window.weatherData = data; // Store data globally
     updateChart();
